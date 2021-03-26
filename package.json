@@ -1,10 +1,6 @@
 {
-  "name": "redpicker",
-  "version": "1.0.0",
-  "author": "stepney141 <stepney141andi.c.i@gmail.com>",
-  "license": "MIT",
+  "type": "module",
   "dependencies": {
-    "deviantart.ts": "^0.2.6",
-    "dotenv": "^8.2.0"
+    "node-fetch": "^2.6.1"
   }
 }
