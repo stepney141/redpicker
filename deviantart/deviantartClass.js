@@ -86,11 +86,11 @@ export class Deviantart {
     }
 
     // 指定したfavoritesフォルダ内のdeviationを取得
-    async getCollectionContents (token, folderid) {
+    async getCollectionContents (token, folderid, offset = 0) {
         try {
             const params = {
                 username: DEVIANTART.USERNAME,
-                offset: 0,
+                offset: offset,
                 limit: 24,
                 mature_content: true,
                 access_token: token

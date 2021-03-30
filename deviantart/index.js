@@ -25,7 +25,11 @@ const username = DEVIANTART.USERNAME;
 
     // 指定したfavouritesフォルダに格納されているdeviationを取得
     const collectionContents = await da.getCollectionContents(token, folders[0]);
-    await util.fileOutput(collectionContents, './json', 'contents_test.json');
+    await util.fileOutput(collectionContents, './json', 'contents_test_01.json');
+    if (collectionContents.has_more) {
+        const collectionContents02 = await da.getCollectionContents(token, folders[0], collectionContents.next_offset);
+        await util.fileOutput(collectionContents02, './json', 'contents_test_02.json');
+    }
 
     // 指定したUUIDのdeviationをオリジナル画質でダウンロード（可能なものに限る）
     // const deviationOriginalImage = await da.getOriginalDeviationImage(token, 'D4A3AA6A-6E92-12C5-D3C4-C63291C25682');
