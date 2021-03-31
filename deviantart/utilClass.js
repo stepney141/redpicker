@@ -12,8 +12,8 @@ export class Util {
         });
     }
 
-    // ファイル出力（writeFile使用）
-    async fileOutput (data, dirname, filename) {
+    // jsonのファイル出力（writeFile使用）
+    async fileOutputJson (data, dirname, filename) {
         try {
             const fixedData = JSON.stringify(data, null, "  ");
             if (!fs.existsSync(dirname)) {
@@ -33,14 +33,15 @@ export class Util {
         console.log(`File Output Completed: ${dirname}/${filename}`);
     }
 
-    // ファイル出力（createWriteStream使用）
-    async fileOutputStream(dataArray, dirname, filename) {
+    // jsonのファイル出力（createWriteStream使用）
+    async fileOutputStreamJson(dataArray, dirname, filename) {
         if (!fs.existsSync(dirname)) {
             fs.mkdirSync(dirname);
         }
         const stream = fs.createWriteStream(`${dirname}/${filename}`);
-        for (const datum of dataArray) {
-            stream.write(datum);
+        for (const index in dataArray) {
+            stream.write(dataArray[index]);
+            console.log(`Now Streaming: Completed Step ${index+1}/${dataArray.length()}`);
         }
         stream.end('\n');
         stream.on('finish', () => {

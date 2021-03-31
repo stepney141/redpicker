@@ -9,27 +9,38 @@ const client_id = DEVIANTART.CLIENT_ID;
 const client_secret = DEVIANTART.CLIENT_SECRET;
 const username = DEVIANTART.USERNAME;
 
+// 指定したfavouritesフォルダに格納されているdeviationを全て取得
+const contentsPicker = async (token, [folder_uuid, folder_name]) => {
+    let loopIndex = 1;
+    let nextOffset = true;
+    let collectionContents;
+    const contentsPickCycle = async () => {
+        collectionContents = await da.getCollectionContents(token, folder_uuid, nextOffset);
+        await util.fileOutputJson(collectionContents, `./json/${folder_name}`, `contents_test_${folder_name}_no${loopIndex}.json`);
+        await util.sleep(5000);
+        if (collectionContents.has_more) {
+            nextOffset = collectionContents.next_offset;
+            loopIndex++;
+            await contentsPickCycle();
+        }
+    };
+    await contentsPickCycle();
+};
+
 (async () => {
 
     // OAuth2 Client Credentials認証でBearer Tokenを取得
     const token = await da.oauth2ClientCredentials(client_id, client_secret);
     // 指定したユーザーのfavouritesフォルダの一覧を取得
     const favorites = await da.getCollectionFolders(token, username);
-    await util.fileOutput(favorites, './json', 'folders_test.json');
+    await util.fileOutputJson(favorites, './json', 'folders_test.json');
     
-    // 取得した各favouritesフォルダのUUIDを配列に追加
+    // 取得した各favouritesフォルダのUUIDとフォルダ名を配列に追加
     let folders = [];
-    for (const data of favorites.results) {
-        folders.push(data.folderid);
-    }
+    for (const data of favorites.results) folders.push([data.folderid, data.name]);
 
-    // 指定したfavouritesフォルダに格納されているdeviationを取得
-    const collectionContents = await da.getCollectionContents(token, folders[0]);
-    await util.fileOutput(collectionContents, './json', 'contents_test_01.json');
-    if (collectionContents.has_more) {
-        const collectionContents02 = await da.getCollectionContents(token, folders[0], collectionContents.next_offset);
-        await util.fileOutput(collectionContents02, './json', 'contents_test_02.json');
-    }
+    // 全てのfavouritesフォルダに格納されているdeviationを全て取得
+    for (const index in folders) await contentsPicker(token, folders[index]);
 
     // 指定したUUIDのdeviationをオリジナル画質でダウンロード（可能なものに限る）
     // const deviationOriginalImage = await da.getOriginalDeviationImage(token, 'D4A3AA6A-6E92-12C5-D3C4-C63291C25682');

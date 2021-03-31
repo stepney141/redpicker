@@ -12,7 +12,7 @@ export class Deviantart {
                 client_secret: client_secret,
             };
             const query = new URLSearchParams(params);
-            const call = await fetch('https://www.deviantart.com/oauth2/token',
+            const response = await fetch('https://www.deviantart.com/oauth2/token',
                 {
                     method: 'POST',
                     headers: {
@@ -22,10 +22,10 @@ export class Deviantart {
                     body: query
                 }
             );
-            if (!call.ok) {
-                throw new Error(`${call.status} ${call.statusText} ${await call.text()}`);
+            if (!response.ok) {
+                throw new Error(`${response.status} ${response.statusText} ${await response.text()}`);
             }
-            return (await call.json()).access_token;
+            return (await response.json()).access_token;
         } catch (e) {
             console.log(e);
             return false;
@@ -35,7 +35,7 @@ export class Deviantart {
     //指定したBearer Tokenを無効にする
     async oauth2revoke (token) {
         try {
-            const call = await fetch('https://www.deviantart.com/oauth2/revoke',
+            const response = await fetch('https://www.deviantart.com/oauth2/revoke',
                 {
                     method: 'POST',
                     headers: {
@@ -45,17 +45,17 @@ export class Deviantart {
                     body: `token=${token}`
                 }
             );
-            if (!call.ok) {
-                throw new Error(`${call.status} ${call.statusText} ${await call.text()}`);
+            if (!response.ok) {
+                throw new Error(`${response.status} ${response.statusText} ${await response.text()}`);
             }
-            return (await call.json());
+            return (await response.json());
         } catch (e) {
             console.log(e);
             return false;
         }
     }
 
-    // 指定したユーザーのfavoritesフォルダの一覧を取得
+    // 指定したユーザーのfavoritesフォルダの一覧をjsonで取得
     async getCollectionFolders (token, username) {
         try {
             const params = {
@@ -66,7 +66,7 @@ export class Deviantart {
                 access_token: token
             };
             const query = new URLSearchParams(params);
-            const call = await fetch(`https://www.deviantart.com/api/v1/oauth2/collections/folders?${query}`,
+            const response = await fetch(`https://www.deviantart.com/api/v1/oauth2/collections/folders?${query}`,
                 {
                     method: 'GET',
                     headers: {
@@ -75,18 +75,18 @@ export class Deviantart {
                     }
                 }
             );
-            if (!call.ok) {
-                throw new Error(`${call.status} ${call.statusText} ${await call.text()}`);
+            if (!response.ok) {
+                throw new Error(`${response.status} ${response.statusText} ${await response.text()}`);
             }
-            return (await call.json());
+            return (await response.json());
         } catch (e) {
             console.log(e);
             return false;
         }
     }
 
-    // 指定したfavoritesフォルダ内のdeviationを取得
-    async getCollectionContents (token, folderid, offset = 0) {
+    // 指定したfavoritesフォルダ内のdeviationの情報をjsonで取得
+    async getCollectionContents (token, folder_uuid, offset = 0) {
         try {
             const params = {
                 username: DEVIANTART.USERNAME,
@@ -96,7 +96,7 @@ export class Deviantart {
                 access_token: token
             };
             const query = new URLSearchParams(params);
-            const call = await fetch(`https://www.deviantart.com/api/v1/oauth2/collections/${folderid}?${query}`,
+            const response = await fetch(`https://www.deviantart.com/api/v1/oauth2/collections/${folder_uuid}?${query}`,
                 {
                     method: 'GET',
                     headers: {
@@ -105,25 +105,25 @@ export class Deviantart {
                     }
                 }
             );
-            if (!call.ok) {
-                throw new Error(`${call.status} ${call.statusText} ${await call.text()}`);
+            if (!response.ok) {
+                throw new Error(`${response.status} ${response.statusText} ${await response.text()}`);
             }
-            return (await call.json());
+            return (await response.json());
         } catch (e) {
             console.log(e);
             return false;
         }
     }
 
-    // 指定したdeviationをオリジナル画質でダウンロード（可能なものに限る）
-    async getOriginalDeviationImage (token, deviationid) {
+    // 指定したdeviationの画像をオリジナル画質でダウンロード（可能なものに限る）
+    async getOriginalDeviationImage (token, deviation_uuid) {
         try {
             const params = {
                 mature_content: true,
                 access_token: token
             };
             const query = new URLSearchParams(params).toString();
-            const call = await fetch(`https://www.deviantart.com/api/v1/oauth2/deviation/download/${deviationid}?${query}`,
+            const response = await fetch(`https://www.deviantart.com/api/v1/oauth2/deviation/download/${deviation_uuid}?${query}`,
                 {
                     method: 'GET',
                     headers: {
@@ -132,10 +132,10 @@ export class Deviantart {
                     }
                 }
             );
-            if (!call.ok) {
-                throw new Error(`${call.status} ${call.statusText} ${await call.text()}`);
+            if (!response.ok) {
+                throw new Error(`${response.status} ${response.statusText} ${await response.text()}`);
             }
-            return (await call.json());
+            return (await response.arrayBuffer());
         } catch (e) {
             console.log(e);
             return false;
@@ -143,14 +143,14 @@ export class Deviantart {
     }
 
     // 指定したdeviation objectを取得
-    async getDeviationObj (token, deviationid) {
+    async getDeviationObj (token, deviation_uuid) {
         try {
             const params = {
                 expand: true,
                 access_token: token
             };
             const query = new URLSearchParams(params).toString();
-            const call = await fetch(`https://www.deviantart.com/api/v1/oauth2/deviation/${deviationid}?${query}`,
+            const response = await fetch(`https://www.deviantart.com/api/v1/oauth2/deviation/${deviation_uuid}?${query}`,
                 {
                     method: 'GET',
                     headers: {
@@ -159,10 +159,10 @@ export class Deviantart {
                     }
                 }
             );
-            if (!call.ok) {
-                throw new Error(`${call.status} ${call.statusText} ${await call.text()}`);
+            if (!response.ok) {
+                throw new Error(`${response.status} ${response.statusText} ${await response.text()}`);
             }
-            return (await call.json());
+            return (await response.json());
         } catch (e) {
             console.log(e);
             return false;
