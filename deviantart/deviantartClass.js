@@ -123,7 +123,9 @@ export class Deviantart {
                 access_token: token
             };
             const query = new URLSearchParams(params).toString();
-            const response = await fetch(`https://www.deviantart.com/api/v1/oauth2/deviation/download/${deviation_uuid}?${query}`,
+
+            //apiをコールして画像URLが含まれたjsonを取得
+            const response_api = await fetch(`https://www.deviantart.com/api/v1/oauth2/deviation/download/${deviation_uuid}?${query}`,
                 {
                     method: 'GET',
                     headers: {
@@ -132,10 +134,24 @@ export class Deviantart {
                     }
                 }
             );
-            if (!response.ok) {
-                throw new Error(`${response.status} ${response.statusText} ${await response.text()}`);
+            if (!response_api.ok) {
+                throw new Error(`${response_api.status} ${response_api.statusText} ${await response_api.text()}`);
             }
-            return (await response.arrayBuffer());
+
+            // apiから返ってきたjsonの中に含まれる画像URLへアクセスし、バイナリデータを取得してreturnする
+            const response_image = await fetch((await response_api.json()).src,
+                {
+                    method: 'GET',
+                    // headers: {
+                    //     'Accept': 'application/json',
+                    //     'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    // }
+                }
+            );
+            if (!response_image.ok) {
+                throw new Error(`${response_image.status} ${response_image.statusText} ${await response_image.text()}`);
+            }
+            return (await response_image.arrayBuffer());
         } catch (e) {
             console.log(e);
             return false;

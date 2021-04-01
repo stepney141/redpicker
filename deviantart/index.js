@@ -27,25 +27,32 @@ const contentsPicker = async (token, [folder_uuid, folder_name]) => {
     await contentsPickCycle();
 };
 
+// 指定したUUIDのdeviationをオリジナル画質でダウンロード（可能なものに限る）
+const originalImagePicker = async () => {};
+
 (async () => {
 
     // OAuth2 Client Credentials認証でBearer Tokenを取得
     const token = await da.oauth2ClientCredentials(client_id, client_secret);
+
     // 指定したユーザーのfavouritesフォルダの一覧を取得
-    const favorites = await da.getCollectionFolders(token, username);
-    await util.fileOutputJson(favorites, './json', 'folders_test.json');
+    const favourites_folders = await da.getCollectionFolders(token, username);
+    await util.fileOutputJson(favourites_folders, './json', 'folders_test.json');
     
-    // 取得した各favouritesフォルダのUUIDとフォルダ名を配列に追加
-    let folders = [];
-    for (const data of favorites.results) folders.push([data.folderid, data.name]);
+    // 各favouritesフォルダのUUIDとフォルダ名の情報を取り出し、配列にする
+    const folder_info = favourites_folders.results.map(element =>  [element.folderid, element.name]);
 
     // 全てのfavouritesフォルダに格納されているdeviationを全て取得
-    for (const index in folders) await contentsPicker(token, folders[index]);
+    for (const array of folder_info) await contentsPicker(token, array);
 
     // 指定したUUIDのdeviationをオリジナル画質でダウンロード（可能なものに限る）
-    // const deviationOriginalImage = await da.getOriginalDeviationImage(token, 'D4A3AA6A-6E92-12C5-D3C4-C63291C25682');
+    const deviationOriginalImage = await da.getOriginalDeviationImage(token, '72517C15-5031-2EFC-2BE5-D45F96B03990');
+    await util.fileOutputBinary(deviationOriginalImage, './img', '72517C15-5031-2EFC-2BE5-D45F96B03990.png');
 
     // 指定したUUIDのdeviation objectを取得
-    // const deviationObj = await da.getDeviationObj(token, 'D4A3AA6A-6E92-12C5-D3C4-C63291C25682');
+    // const deviationObj = await da.getDeviationObj(token, '72517C15-5031-2EFC-2BE5-D45F96B03990');
+
+    // 指定したUUIDのdeviation（小説）の文章を取得
+    // const text = await da.getDeviationText(token, 'F5CCB77D-EFA5-F7BB-6803-21A4D2CBEC34')
 
 })();
