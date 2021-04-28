@@ -33,7 +33,7 @@ export class Deviantart {
     }
 
     //指定したBearer Tokenを無効にする
-    async oauth2revoke (token) {
+    async oauth2Revoke (token) {
         try {
             const response = await fetch('https://www.deviantart.com/oauth2/revoke',
                 {
@@ -86,7 +86,7 @@ export class Deviantart {
     }
 
     // 指定したfavoritesフォルダ内のdeviationの情報をjsonで取得
-    async getCollectionContents (token, folder_uuid, offset = 0) {
+    async getContentsInCollection (token, folder_uuid, offset = 0) {
         try {
             const params = {
                 username: DEVIANTART.USERNAME,
@@ -116,7 +116,7 @@ export class Deviantart {
     }
 
     // 指定したdeviationの画像をオリジナル画質でダウンロード（可能なものに限る）
-    async getOriginalDeviationImage (token, deviation_uuid) {
+    async getDeviationOriginalImage (token, deviation_uuid) {
         try {
             const params = {
                 mature_content: true,
@@ -167,6 +167,34 @@ export class Deviantart {
             };
             const query = new URLSearchParams(params).toString();
             const response = await fetch(`https://www.deviantart.com/api/v1/oauth2/deviation/${deviation_uuid}?${query}`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                    }
+                }
+            );
+            if (!response.ok) {
+                throw new Error(`${response.status} ${response.statusText} ${await response.text()}`);
+            }
+            return (await response.json());
+        } catch (e) {
+            console.log(e);
+            return false;
+        }
+    }
+
+    // 指定したユーザーのfavoritesフォルダの一覧をjsonで取得
+    async getDeviationContent (token, deviation_uuid) {
+        try {
+            const params = {
+                deviationid: deviation_uuid,
+                mature_content: true,
+                access_token: token
+            };
+            const query = new URLSearchParams(params);
+            const response = await fetch(`https://www.deviantart.com/api/v1/oauth2/deviation/content?${query}`,
                 {
                     method: 'GET',
                     headers: {
