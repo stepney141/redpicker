@@ -9,3 +9,9 @@ env.js
 
 */json/
 */img/
+
+env.json
+
+*.zip
+chromedriver
+trace.json
