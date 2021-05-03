@@ -41,9 +41,8 @@ const print_auth_token_response = (response) => {
 const login = async () => {
     const browser = await puppeteer.launch({
         defaultViewport: { width: 1000, height: 1000 },
-        headless: false,
+        // headless: true,
         devtools: true,
-        slowMo: 50
     });
 
     try {
@@ -67,17 +66,18 @@ const login = async () => {
         await (await password_input_elementHandle)[0].type(password);
         await (await login_button_elementHandle)[0].click();
 
-        await page.waitForRequest("https://accounts.pixiv.net/post-redirect");
-
-        await page.tracing.stop();
+        await page.waitForNavigation({timeout: 60000});
 
         // filter code url from performance logs
         let code;
         page.on('request', request => {
             if (request.url().includes("pixiv://")) {
+                console.log("success");
                 code = request.url().match(/code=([^&]*)/)[1];
             }
         });
+
+        await page.tracing.stop();
 
         console.log(`[INFO] Get code: ${code}`);
 
@@ -86,7 +86,7 @@ const login = async () => {
         const response = await fetch(AUTH_TOKEN_URL,
             {
                 method: "POST",
-                data: {
+                body: {
                     "client_id": CLIENT_ID,
                     "client_secret": CLIENT_SECRET,
                     "code": code,
@@ -117,10 +117,11 @@ const refresh = async (refresh_token) => {
     const response = await fetch(AUTH_TOKEN_URL,
         {
             method: "POST",
-            data: {
+            body: {
                 "client_id": CLIENT_ID,
                 "client_secret": CLIENT_SECRET,
                 "grant_type": "refresh_token",
+           
                 "include_policy": "true",
                 "refresh_token": refresh_token,
             },
