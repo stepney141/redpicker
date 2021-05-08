@@ -4,5 +4,6 @@
     "node-fetch": "^2.6.1",
     "openid-client": "^4.7.2",
     "puppeteer": "^9.0.0"
-  }
+  },
+   "type": "module"
 }

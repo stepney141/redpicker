@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 
-export class Util {
+export class Utility {
 
     // 指定した時間(ms)だけ処理を停止する
     async sleep(time) {
