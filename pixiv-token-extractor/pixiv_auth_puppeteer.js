@@ -1,12 +1,12 @@
-const puppeteer = require('puppeteer');
-const fetch = require('node-fetch');
-const fs = require('fs');
-const { generators } = require('openid-client');
+import puppeteer from 'puppeteer';
+import fetch from 'node-fetch';
+import fs from 'fs';
+import { generators } from 'openid-client';
 
 const { userid, password}= JSON.parse(fs.readFileSync('./env.json'));
 
-// Latest app version can be found using GET /v1/application-info/android
-const USER_AGENT = "PixivAndroidApp/5.0.234 (Android 11; Pixel 5)";
+/* Latest app version can be found using GET /v1/application-info/android */
+const USER_AGENT = "PixivIOSApp/7.13.3 (iOS 14.6; iPhone13,2)";
 const REDIRECT_URI = "https://app-api.pixiv.net/web/v1/users/auth/pixiv/callback";
 const LOGIN_URL = "https://app-api.pixiv.net/web/v1/login";
 const AUTH_TOKEN_URL = "https://oauth.secure.pixiv.net/auth/token";
@@ -18,7 +18,6 @@ const userid_input_xpath = '//*[@id="LoginComponent"]/form/div[1]/div[1]/input';
 const password_input_xpath = '//*[@id="LoginComponent"]/form/div[1]/div[2]/input';
 const login_button_xpath = '//*[@id="LoginComponent"]/form/button';
 
-const sleep = async (seconds) => new Promise((resolve, reject) => { setTimeout(() => { resolve(); }, seconds * 1000); });
 
 const oauth_pkce = () => {
     /* Proof Key for Code Exchange by OAuth Public Clients (RFC7636). */
@@ -38,15 +37,13 @@ const print_auth_token_response = (response) => {
     console.log("expires_in:", ("expires_in" in data) ? data.expires_in : 0);
 };
 
-const login = async () => {
+const login_web = async (code_challenge) => {
     const browser = await puppeteer.launch({
         defaultViewport: { width: 1000, height: 1000 },
-        // headless: true,
-        devtools: true,
+        headless: true,
+        // devtools: true,
     });
-
     try {
-        const { code_verifier, code_challenge } = oauth_pkce();
         const login_params = {
             "code_challenge": code_challenge,
             "code_challenge_method": "S256",
@@ -55,34 +52,43 @@ const login = async () => {
         const login_query = new URLSearchParams(login_params).toString();
 
         const page = await browser.newPage();
-        await page.goto(`${LOGIN_URL}?${login_query}`);
-
-        await page.tracing.start();
+        const client = await page.target().createCDPSession();
+        await client.send('Network.enable');
+        await page.goto(`${LOGIN_URL}?${login_query}`); // go to the login page
 
         const userid_input_elementHandle = page.$x(userid_input_xpath);
         const password_input_elementHandle = page.$x(password_input_xpath);
         const login_button_elementHandle = page.$x(login_button_xpath);
-        await (await userid_input_elementHandle)[0].type(userid);
-        await (await password_input_elementHandle)[0].type(password);
-        await (await login_button_elementHandle)[0].click();
+        await (await userid_input_elementHandle)[0].type(userid); // input userid
+        await (await password_input_elementHandle)[0].type(password); //input password
+        await (await login_button_elementHandle)[0].click(); // click the login button
 
-        await page.waitForNavigation({timeout: 60000});
-
-        // filter code url from performance logs
         let code;
-        page.on('request', request => {
-            if (request.url().includes("pixiv://")) {
+        await client.on('Network.requestWillBeSent', (params) => {
+            if (params.documentURL.includes("pixiv://")) {
                 console.log("success");
-                code = request.url().match(/code=([^&]*)/)[1];
+                code = params.documentURL.match(/code=([^&]*)/)[1];
             }
         });
 
-        await page.tracing.stop();
-
-        console.log(`[INFO] Get code: ${code}`);
-
+        await page.waitForTimeout(10000);
         await browser.close();
 
+        console.log(`[INFO] Get code: ${code}`);
+        return code;
+
+    } catch (error) {
+        console.log(error);
+    }
+};
+
+const get_token = async () => {
+    try {
+        const { code_verifier, code_challenge } = oauth_pkce();
+        console.log("[INFO] Gen code_verifier:", code_verifier);
+
+        const code = await login_web(code_challenge);
+        
         const response = await fetch(AUTH_TOKEN_URL,
             {
                 method: "POST",
@@ -97,6 +103,8 @@ const login = async () => {
                 },
                 headers: {
                     "User-Agent": USER_AGENT,
+                    "app-os-version": "14.6",
+                    "app-os": "ios",
                 },
             }
         );
@@ -104,13 +112,9 @@ const login = async () => {
             throw new Error(`${response.status} ${response.statusText} ${await response.text()}`);
         }
         print_auth_token_response(response);
-
     } catch (error) {
         console.log(error);
     }
-    // finally {
-    //     await browser.close();
-    // }
 };
 
 const refresh = async (refresh_token) => {
@@ -137,18 +141,20 @@ const refresh = async (refresh_token) => {
 };
 
 (async () => {
-    if (!process.argv[2]) {
-        throw new Error("input 'login' or 'refresh' after 'node index.js'");
-    }
-    if (process.argv[2] == "login") {
-        await login();
-    }
-    if (process.argv[2] == "refresh") {
-        if (!process.argv[3]) {
-            throw new Error("input a token you want to refresh");
+    try {
+        if (process.argv[2] == "login") {
+            await get_token();
+        } else if (process.argv[2] == "refresh") {
+            if (!process.argv[3]) {
+                throw new Error("input a token you want to refresh");
+            } else {
+                const old_refresh_token = process.argv[3];
+                await refresh(old_refresh_token);
+            }
         } else {
-            const old_refresh_token = process.argv[3];
-            await refresh(old_refresh_token);
+            throw new Error("input 'login' or 'refresh' options after 'node index.js'");
         }
+    } catch (e) {
+        console.log(e);
     }
 })();

@@ -17,13 +17,18 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 
 # Latest app version can be found using GET /v1/application-info/android
-USER_AGENT = "PixivAndroidApp/5.0.234 (Android 11; Pixel 5)"
+USER_AGENT = "PixivIOSApp/7.13.3 (iOS 14.6; iPhone13,2)"
 REDIRECT_URI = "https://app-api.pixiv.net/web/v1/users/auth/pixiv/callback"
 LOGIN_URL = "https://app-api.pixiv.net/web/v1/login"
 AUTH_TOKEN_URL = "https://oauth.secure.pixiv.net/auth/token"
 CLIENT_ID = "MOBrBDS8blbauoSck0ZfDbtuzpyT"
 CLIENT_SECRET = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj"
-
+REQUESTS_KWARGS = {
+    # 'proxies': {
+    #     'https': 'http://127.0.0.1:1087',
+    # },
+    # 'verify': False
+}
 
 def s256(data):
     """S256 transformation method."""
@@ -68,7 +73,9 @@ def login():
         "code_challenge_method": "S256",
         "client": "pixiv-android",
     }
+    print("[INFO] Gen code_verifier:", code_verifier)
 
+    print(f"{urlencode(login_params)}")
     driver.get(f"{LOGIN_URL}?{urlencode(login_params)}")
 
     while True:
@@ -103,7 +110,12 @@ def login():
             "include_policy": "true",
             "redirect_uri": REDIRECT_URI,
         },
-        headers={"User-Agent": USER_AGENT},
+        headers={
+            "user-agent": USER_AGENT,
+            "app-os-version": "14.6",
+            "app-os": "ios",
+        },
+        **REQUESTS_KWARGS
     )
 
     print_auth_token_response(response)
@@ -119,7 +131,12 @@ def refresh(refresh_token):
             "include_policy": "true",
             "refresh_token": refresh_token,
         },
-        headers={"User-Agent": USER_AGENT},
+        headers={
+            "user-agent": USER_AGENT,
+            "app-os-version": "14.6",
+            "app-os": "ios",
+        },
+        # **REQUESTS_KWARGS
     )
     print_auth_token_response(response)
 
