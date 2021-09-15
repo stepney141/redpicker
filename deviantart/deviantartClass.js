@@ -1,5 +1,5 @@
 import fetch from 'node-fetch';
-import { DEVIANTART } from '../env.js';
+import { DEVIANTART } from './env.js';
 
 export class Deviantart {
 

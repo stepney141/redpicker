@@ -1,4 +1,4 @@
-import { DEVIANTART } from '../env.js';
+import { DEVIANTART } from './env.js';
 import { Deviantart } from './deviantartClass.js';
 import { Utility } from './utilityClass.js';
 
