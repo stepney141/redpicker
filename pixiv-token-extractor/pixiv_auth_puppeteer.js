@@ -1,5 +1,5 @@
 /* Original: https://gist.github.com/upbit/6edda27cb1644e94183291109b8a5fde */
- 
+
 import puppeteer from 'puppeteer';
 import fetch from 'node-fetch';
 import fs from 'fs';
@@ -37,7 +37,7 @@ const login_web = async (code_challenge) => {
         const login_params = {
             "code_challenge": code_challenge,
             "code_challenge_method": "S256",
-            "client": "pixiv-android",
+            "client": "pixiv-android"
         };
         const login_query = new URLSearchParams(login_params).toString();
 
@@ -54,18 +54,18 @@ const login_web = async (code_challenge) => {
         await (await password_input_elementHandle)[0].type(password); //input password
         await (await login_button_elementHandle)[0].click(); // click the login button
 
+        let code;
         await client.on('Network.requestWillBeSent', (params) => {
             if (params.documentURL.includes("pixiv://")) {
                 console.log("[+]: Success!");
-                const code = params.documentURL.match(/code=([^&]*)/)[1];
+                code = params.documentURL.match(/code=([^&]*)/)[1];
                 console.log(`[INFO] Get code: ${code}`);
-                return code;
             }
         });
 
         await page.waitForTimeout(10000);
-        // await browser.close();
 
+        return code;
     } catch (error) {
         console.log(error);
     } finally {
@@ -80,6 +80,9 @@ const get_token = async () => {
         console.log("[INFO] Gen code_challenge:", code_challenge);
 
         const code = await login_web(code_challenge);
+        if (typeof code != 'string') {
+            throw new Error("Failed to obtain a login token. Please try again.");
+        }
         
         const response = await fetch(AUTH_TOKEN_URL,
             {
@@ -94,8 +97,8 @@ const get_token = async () => {
                     "redirect_uri": REDIRECT_URI,
                 },
                 headers: {
-                    "Content-Type": 'application/x-www-form-urlencoded',
-                    "User-Agent": USER_AGENT,
+                    "Content-Type": 'application/json',
+                    "user-agent": USER_AGENT,
                     "app-os-version": "14.6",
                     "app-os": "ios",
                 },
