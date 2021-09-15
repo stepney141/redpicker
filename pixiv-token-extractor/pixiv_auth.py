@@ -74,6 +74,7 @@ def login():
         "client": "pixiv-android",
     }
     print("[INFO] Gen code_verifier:", code_verifier)
+    print("[INFO] Gen code_challenge:", code_challenge)
 
     print(f"{urlencode(login_params)}")
     driver.get(f"{LOGIN_URL}?{urlencode(login_params)}")

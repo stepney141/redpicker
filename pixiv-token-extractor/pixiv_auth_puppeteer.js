@@ -1,3 +1,5 @@
+/* Original: https://gist.github.com/upbit/6edda27cb1644e94183291109b8a5fde */
+ 
 import puppeteer from 'puppeteer';
 import fetch from 'node-fetch';
 import fs from 'fs';
@@ -18,23 +20,11 @@ const userid_input_xpath = '//*[@id="LoginComponent"]/form/div[1]/div[1]/input';
 const password_input_xpath = '//*[@id="LoginComponent"]/form/div[1]/div[2]/input';
 const login_button_xpath = '//*[@id="LoginComponent"]/form/button';
 
-
 const oauth_pkce = () => {
     /* Proof Key for Code Exchange by OAuth Public Clients (RFC7636). */
     const code_verifier = generators.codeVerifier(32);
     const code_challenge = generators.codeChallenge(code_verifier);
     return { code_verifier, code_challenge };
-};
-
-const print_auth_token_response = (response) => {
-    const data = response.json();
-
-    const access_token = data.access_token;
-    const refresh_token = data.refresh_token;
-
-    console.log("access_token:", access_token);
-    console.log("refresh_token:", refresh_token);
-    console.log("expires_in:", ("expires_in" in data) ? data.expires_in : 0);
 };
 
 const login_web = async (code_challenge) => {
@@ -53,6 +43,7 @@ const login_web = async (code_challenge) => {
 
         const page = await browser.newPage();
         const client = await page.target().createCDPSession();
+
         await client.send('Network.enable');
         await page.goto(`${LOGIN_URL}?${login_query}`); // go to the login page
 
@@ -63,22 +54,22 @@ const login_web = async (code_challenge) => {
         await (await password_input_elementHandle)[0].type(password); //input password
         await (await login_button_elementHandle)[0].click(); // click the login button
 
-        let code;
         await client.on('Network.requestWillBeSent', (params) => {
             if (params.documentURL.includes("pixiv://")) {
-                console.log("success");
-                code = params.documentURL.match(/code=([^&]*)/)[1];
+                console.log("[+]: Success!");
+                const code = params.documentURL.match(/code=([^&]*)/)[1];
+                console.log(`[INFO] Get code: ${code}`);
+                return code;
             }
         });
 
         await page.waitForTimeout(10000);
-        await browser.close();
-
-        console.log(`[INFO] Get code: ${code}`);
-        return code;
+        // await browser.close();
 
     } catch (error) {
         console.log(error);
+    } finally {
+        await browser.close();
     }
 };
 
@@ -86,6 +77,7 @@ const get_token = async () => {
     try {
         const { code_verifier, code_challenge } = oauth_pkce();
         console.log("[INFO] Gen code_verifier:", code_verifier);
+        console.log("[INFO] Gen code_challenge:", code_challenge);
 
         const code = await login_web(code_challenge);
         
@@ -102,6 +94,7 @@ const get_token = async () => {
                     "redirect_uri": REDIRECT_URI,
                 },
                 headers: {
+                    "Content-Type": 'application/x-www-form-urlencoded',
                     "User-Agent": USER_AGENT,
                     "app-os-version": "14.6",
                     "app-os": "ios",
@@ -117,6 +110,17 @@ const get_token = async () => {
     }
 };
 
+const print_auth_token_response = (response) => {
+    const data = response.json();
+
+    const access_token = data.access_token;
+    const refresh_token = data.refresh_token;
+
+    console.log("access_token:", access_token);
+    console.log("refresh_token:", refresh_token);
+    console.log("expires_in:", ("expires_in" in data) ? data.expires_in : 0);
+};
+
 const refresh = async (refresh_token) => {
     const response = await fetch(AUTH_TOKEN_URL,
         {
@@ -125,7 +129,6 @@ const refresh = async (refresh_token) => {
                 "client_id": CLIENT_ID,
                 "client_secret": CLIENT_SECRET,
                 "grant_type": "refresh_token",
-           
                 "include_policy": "true",
                 "refresh_token": refresh_token,
             },
@@ -146,13 +149,13 @@ const refresh = async (refresh_token) => {
             await get_token();
         } else if (process.argv[2] == "refresh") {
             if (!process.argv[3]) {
-                throw new Error("input a token you want to refresh");
+                throw new Error("[!]: Input your refresh token");
             } else {
                 const old_refresh_token = process.argv[3];
                 await refresh(old_refresh_token);
             }
         } else {
-            throw new Error("input 'login' or 'refresh' options after 'node index.js'");
+            throw new Error("[!]: Input 'login' or 'refresh' option");
         }
     } catch (e) {
         console.log(e);
