@@ -28,12 +28,13 @@ const oauth_pkce = () => {
 };
 
 const login_web = async (code_challenge) => {
-    const browser = await puppeteer.launch({
+    const pptr_browser = await puppeteer.launch({
         defaultViewport: { width: 1000, height: 1000 },
         headless: true,
         // devtools: true,
     });
     try {
+        let code;
         const login_params = {
             "code_challenge": code_challenge,
             "code_challenge_method": "S256",
@@ -41,8 +42,20 @@ const login_web = async (code_challenge) => {
         };
         const login_query = new URLSearchParams(login_params).toString();
 
-        const page = await browser.newPage();
+        const page = await pptr_browser.newPage();
         const client = await page.target().createCDPSession();
+        await page.evaluateOnNewDocument(() => { //webdriver.navigatorを消して自動操縦であることを隠す
+            Object.defineProperty(navigator, 'webdriver', ()=>{});
+            delete navigator.__proto__.webdriver;
+        });
+
+        await page.setRequestInterception(true);
+        // page.on('request', (interceptedRequest) => {
+        //     if (interceptedRequest.url().includes("pixiv://")) {
+        //         code = interceptedRequest.url().match(/code=([^&]*)/)[1];
+        //         console.log(`[INFO] Get code: ${code}`);
+        //     }
+        // });
 
         await client.send('Network.enable');
         await page.goto(`${LOGIN_URL}?${login_query}`); // go to the login page
@@ -53,8 +66,7 @@ const login_web = async (code_challenge) => {
         await (await userid_input_elementHandle)[0].type(userid); // input userid
         await (await password_input_elementHandle)[0].type(password); //input password
         await (await login_button_elementHandle)[0].click(); // click the login button
-
-        let code;
+        
         await client.on('Network.requestWillBeSent', (params) => {
             if (params.documentURL.includes("pixiv://")) {
                 console.log("[+]: Success!");
@@ -69,7 +81,7 @@ const login_web = async (code_challenge) => {
     } catch (error) {
         console.log(error);
     } finally {
-        await browser.close();
+        await pptr_browser.close();
     }
 };
 
