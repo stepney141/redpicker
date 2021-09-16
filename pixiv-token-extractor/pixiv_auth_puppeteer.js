@@ -89,20 +89,21 @@ const get_token = async () => {
             throw new Error("Failed to obtain a login token. Please try again.");
         }
         
+        const body = {
+            "client_id": CLIENT_ID,
+            "client_secret": CLIENT_SECRET,
+            "code": code,
+            "code_verifier": code_verifier,
+            "grant_type": "authorization_code",
+            "include_policy": "true",
+            "redirect_uri": REDIRECT_URI,
+        };
+        const query = new URLSearchParams(body);
         const response = await fetch(AUTH_TOKEN_URL,
             {
                 method: "POST",
-                body: {
-                    "client_id": CLIENT_ID,
-                    "client_secret": CLIENT_SECRET,
-                    "code": code,
-                    "code_verifier": code_verifier,
-                    "grant_type": "authorization_code",
-                    "include_policy": "true",
-                    "redirect_uri": REDIRECT_URI,
-                },
+                body: query,
                 headers: {
-                    "Content-Type": 'application/json',
                     "user-agent": USER_AGENT,
                     "app-os-version": "14.6",
                     "app-os": "ios",
@@ -118,8 +119,8 @@ const get_token = async () => {
     }
 };
 
-const print_auth_token_response = (response) => {
-    const data = response.json();
+const print_auth_token_response = async (response) => {
+    const data = await response.json();
 
     const access_token = data.access_token;
     const refresh_token = data.refresh_token;
@@ -130,16 +131,18 @@ const print_auth_token_response = (response) => {
 };
 
 const refresh = async (refresh_token) => {
+    const body = {
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET,
+        "grant_type": "refresh_token",
+        "include_policy": "true",
+        "refresh_token": refresh_token,
+    };
+    const query = new URLSearchParams(body);
     const response = await fetch(AUTH_TOKEN_URL,
         {
             method: "POST",
-            body: {
-                "client_id": CLIENT_ID,
-                "client_secret": CLIENT_SECRET,
-                "grant_type": "refresh_token",
-                "include_policy": "true",
-                "refresh_token": refresh_token,
-            },
+            body: query,
             headers: {
                 "User-Agent": USER_AGENT
             }
