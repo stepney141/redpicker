@@ -5,7 +5,7 @@ import fetch from 'node-fetch';
 import fs from 'fs';
 import { generators } from 'openid-client';
 
-const { userid, password}= JSON.parse(fs.readFileSync('./env.json'));
+const { userid, password }= JSON.parse(fs.readFileSync('./env.json'));
 
 /* Latest app version can be found using GET /v1/application-info/android */
 const USER_AGENT = "PixivIOSApp/7.13.3 (iOS 14.6; iPhone13,2)";
@@ -48,14 +48,7 @@ const login_web = async (code_challenge) => {
             Object.defineProperty(navigator, 'webdriver', ()=>{});
             delete navigator.__proto__.webdriver;
         });
-
-        await page.setRequestInterception(true);
-        // page.on('request', (interceptedRequest) => {
-        //     if (interceptedRequest.url().includes("pixiv://")) {
-        //         code = interceptedRequest.url().match(/code=([^&]*)/)[1];
-        //         console.log(`[INFO] Get code: ${code}`);
-        //     }
-        // });
+        // await page.setDefaultTimeout(0);
 
         await client.send('Network.enable');
         await page.goto(`${LOGIN_URL}?${login_query}`); // go to the login page
